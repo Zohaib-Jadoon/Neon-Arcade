@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import { useFsm } from '../composables/useFsm' // Assuming this path is correct
@@ -19,13 +19,172 @@ const companyName = ref('')
 const contactPhone = ref('')
 const address = ref('')
 
+// Validation error states
+const nameError = ref('')
+const emailError = ref('')
+const passwordError = ref('')
+const confirmPasswordError = ref('')
+const companyNameError = ref('')
+const contactPhoneError = ref('')
+const addressError = ref('')
+
 // FSM integration (unchanged)
 const { state, context, nextEvents, error: fsmError, sendTransition, fetchInitialState } = useFsm()
 const fsmKey = 'globalKey' // Example key, can be dynamic
 const fsmTransition = ref('START') // Example transition event
 
-onMounted(() => {
-  fetchInitialState(fsmKey)
+// Validation functions
+const validateName = (name) => {
+  if (!name) {
+    return 'Name is required'
+  }
+  if (name.length < 2) {
+    return 'Name must be at least 2 characters long'
+  }
+  if (!/^[a-zA-Z\s]+$/.test(name)) {
+    return 'Name can only contain letters and spaces'
+  }
+  return ''
+}
+
+const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!email) {
+    return 'Email is required'
+  }
+  if (!emailRegex.test(email)) {
+    return 'Please enter a valid email address'
+  }
+  return ''
+}
+
+const validatePassword = (password) => {
+  if (!password) {
+    return 'Password is required'
+  }
+  if (password.length < 8) {
+    return 'Password must be at least 8 characters long'
+  }
+  if (!/(?=.*[a-z])/.test(password)) {
+    return 'Password must contain at least one lowercase letter'
+  }
+  if (!/(?=.*[A-Z])/.test(password)) {
+    return 'Password must contain at least one uppercase letter'
+  }
+  if (!/(?=.*\d)/.test(password)) {
+    return 'Password must contain at least one number'
+  }
+  if (!/(?=.*[@$!%*?&])/.test(password)) {
+    return 'Password must contain at least one special character (@$!%*?&)'
+  }
+  return ''
+}
+
+const validateConfirmPassword = (confirmPassword, password) => {
+  if (!confirmPassword) {
+    return 'Please confirm your password'
+  }
+  if (confirmPassword !== password) {
+    return 'Passwords do not match'
+  }
+  return ''
+}
+
+const validateCompanyName = (companyName) => {
+  if (!companyName) {
+    return 'Company name is required'
+  }
+  if (companyName.length < 2) {
+    return 'Company name must be at least 2 characters long'
+  }
+  return ''
+}
+
+const validateContactPhone = (phone) => {
+  const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
+  if (!phone) {
+    return 'Contact phone is required'
+  }
+  if (!/^[\d\s\-\+$$$$]+$/.test(phone)) {
+    return 'Please enter a valid phone number'
+  }
+  if (phone.replace(/\D/g, '').length < 10) {
+    return 'Phone number must be at least 10 digits'
+  }
+  return ''
+}
+
+const validateAddress = (address) => {
+  if (!address) {
+    return 'Address is required'
+  }
+  if (address.length < 10) {
+    return 'Address must be at least 10 characters long'
+  }
+  return ''
+}
+
+// Validate entire form
+const validateForm = () => {
+  nameError.value = validateName(name.value)
+  emailError.value = validateEmail(email.value)
+  passwordError.value = validatePassword(password.value)
+  confirmPasswordError.value = validateConfirmPassword(confirmPassword.value, password.value)
+  
+  let isValid = !nameError.value && !emailError.value && !passwordError.value && !confirmPasswordError.value
+  
+  // Validate seller fields if role is seller
+  if (role.value === 'seller') {
+    companyNameError.value = validateCompanyName(companyName.value)
+    contactPhoneError.value = validateContactPhone(contactPhone.value)
+    addressError.value = validateAddress(address.value)
+    
+    isValid = isValid && !companyNameError.value && !contactPhoneError.value && !addressError.value
+  }
+  
+  return isValid
+}
+
+// Real-time validation watchers
+watch(name, (newName) => {
+  nameError.value = validateName(newName)
+})
+
+watch(email, (newEmail) => {
+  emailError.value = validateEmail(newEmail)
+})
+
+watch(password, (newPassword) => {
+  passwordError.value = validatePassword(newPassword)
+  // Re-validate confirm password when password changes
+  if (confirmPassword.value) {
+    confirmPasswordError.value = validateConfirmPassword(confirmPassword.value, newPassword)
+  }
+})
+
+watch(confirmPassword, (newConfirmPassword) => {
+  confirmPasswordError.value = validateConfirmPassword(newConfirmPassword, password.value)
+})
+
+watch(companyName, (newCompanyName) => {
+  companyNameError.value = validateCompanyName(newCompanyName)
+})
+
+watch(contactPhone, (newContactPhone) => {
+  contactPhoneError.value = validateContactPhone(newContactPhone)
+})
+
+watch(address, (newAddress) => {
+  addressError.value = validateAddress(newAddress)
+})
+
+// Clear seller field errors when role changes from seller to gamer
+watch(role, (newRole) => {
+  if (newRole !== 'seller') {
+    companyNameError.value = ''
+    contactPhoneError.value = ''
+    addressError.value = ''
+  }
 })
 
 const triggerFsmTransition = async () => {
@@ -40,9 +199,9 @@ const triggerFsmTransition = async () => {
 const handleSignup = async () => {
   errorMessage.value = ''
   successMessage.value = ''
-
-  if (password.value !== confirmPassword.value) {
-    errorMessage.value = 'Passwords do not match.'
+  
+  // Validate form before proceeding
+  if (!validateForm()) {
     return
   }
 
@@ -61,17 +220,11 @@ const handleSignup = async () => {
       address: address.value,
       gamesListed: 0, // Initialize games listed for new sellers
     }
-    // Basic validation for seller fields
-    if (!companyName.value || !contactPhone.value || !address.value) {
-      errorMessage.value = 'Please fill in all seller profile details.'
-      return
-    }
   }
 
   try {
     // Send FSM transition for signup
     const response = await sendTransition('globalKey', 'SIGNUP', userData);
-
     if (response.errorMessage) {
       errorMessage.value = response.errorMessage;
       return;
@@ -85,28 +238,64 @@ const handleSignup = async () => {
     errorMessage.value = error.message || 'Signup failed. Please try again.'
   }
 }
+
+onMounted(() => {
+  fetchInitialState(fsmKey)
+})
 </script>
 
 <template>
   <div class="signup-view">
-    <div class="signup-container cyber-card" :class="{ 'has-error': errorMessage }">
+    <div class="signup-container cyber-card" :class="{ 'has-error': errorMessage || nameError || emailError || passwordError || confirmPasswordError || companyNameError || contactPhoneError || addressError }">
       <h1 class="signup-title neon-glow">Sign Up</h1>
       <form @submit.prevent="handleSignup" class="signup-form">
         <div class="form-group">
           <label for="name">Name:</label>
-          <input type="text" id="name" v-model="name" required class="cyber-input" />
+          <input 
+            type="text" 
+            id="name" 
+            v-model="name" 
+            required 
+            class="cyber-input"
+            :class="{ 'error': nameError }"
+          />
+          <p v-if="nameError" class="validation-error">{{ nameError }}</p>
         </div>
         <div class="form-group">
           <label for="email">Email:</label>
-          <input type="email" id="email" v-model="email" required class="cyber-input" />
+          <input 
+            type="email" 
+            id="email" 
+            v-model="email" 
+            required 
+            class="cyber-input"
+            :class="{ 'error': emailError }"
+          />
+          <p v-if="emailError" class="validation-error">{{ emailError }}</p>
         </div>
         <div class="form-group">
           <label for="password">Password:</label>
-          <input type="password" id="password" v-model="password" required class="cyber-input" />
+          <input 
+            type="password" 
+            id="password" 
+            v-model="password" 
+            required 
+            class="cyber-input"
+            :class="{ 'error': passwordError }"
+          />
+          <p v-if="passwordError" class="validation-error">{{ passwordError }}</p>
         </div>
         <div class="form-group">
           <label for="confirmPassword">Confirm Password:</label>
-          <input type="password" id="confirmPassword" v-model="confirmPassword" required class="cyber-input" />
+          <input 
+            type="password" 
+            id="confirmPassword" 
+            v-model="confirmPassword" 
+            required 
+            class="cyber-input"
+            :class="{ 'error': confirmPasswordError }"
+          />
+          <p v-if="confirmPasswordError" class="validation-error">{{ confirmPasswordError }}</p>
         </div>
         <div class="form-group">
           <label for="role">Register As:</label>
@@ -119,15 +308,39 @@ const handleSignup = async () => {
           <h2 class="seller-fields-title">Seller Profile Details</h2>
           <div class="form-group">
             <label for="companyName">Company Name:</label>
-            <input type="text" id="companyName" v-model="companyName" required class="cyber-input" />
+            <input 
+              type="text" 
+              id="companyName" 
+              v-model="companyName" 
+              required 
+              class="cyber-input"
+              :class="{ 'error': companyNameError }"
+            />
+            <p v-if="companyNameError" class="validation-error">{{ companyNameError }}</p>
           </div>
           <div class="form-group">
             <label for="contactPhone">Contact Phone:</label>
-            <input type="tel" id="contactPhone" v-model="contactPhone" required class="cyber-input" />
+            <input 
+              type="tel" 
+              id="contactPhone" 
+              v-model="contactPhone" 
+              required 
+              class="cyber-input"
+              :class="{ 'error': contactPhoneError }"
+            />
+            <p v-if="contactPhoneError" class="validation-error">{{ contactPhoneError }}</p>
           </div>
           <div class="form-group">
             <label for="address">Address:</label>
-            <textarea id="address" v-model="address" required rows="3" class="cyber-input"></textarea>
+            <textarea 
+              id="address" 
+              v-model="address" 
+              required 
+              rows="3" 
+              class="cyber-input"
+              :class="{ 'error': addressError }"
+            ></textarea>
+            <p v-if="addressError" class="validation-error">{{ addressError }}</p>
           </div>
         </div>
         <p v-if="errorMessage" class="error-message animate-shake">{{ errorMessage }}</p>
@@ -176,9 +389,9 @@ const handleSignup = async () => {
   border-radius: 8px;
   padding: 40px;
   box-shadow:
-    0 5px 20px rgba(0, 240, 255, 0.5), /* Main glow */
-    0 10px 30px rgba(0, 240, 255, 0.3), /* Deeper glow */
-    0 15px 40px rgba(0, 240, 255, 0.1); /* Fainter, wider glow for depth */
+   0 5px 20px rgba(0, 240, 255, 0.5), /* Main glow */
+   0 10px 30px rgba(0, 240, 255, 0.3), /* Deeper glow */
+   0 15px 40px rgba(0, 240, 255, 0.1); /* Fainter, wider glow for depth */
   text-align: center;
   max-width: 550px;
   width: 100%;
@@ -209,16 +422,16 @@ const handleSignup = async () => {
 .signup-container:hover {
   transform: translateY(-5px);
   box-shadow:
-    0 8px 25px rgba(0, 240, 255, 0.7),
-    0 15px 40px rgba(0, 240, 255, 0.5),
-    0 20px 50px rgba(0, 240, 255, 0.2);
+   0 8px 25px rgba(0, 240, 255, 0.7),
+   0 15px 40px rgba(0, 240, 255, 0.5),
+   0 20px 50px rgba(0, 240, 255, 0.2);
 }
 
 .signup-container.has-error {
   box-shadow:
-    0 5px 20px var(--error-color),
-    0 10px 30px rgba(255, 77, 77, 0.7),
-    0 15px 40px rgba(255, 77, 77, 0.4);
+   0 5px 20px var(--error-color),
+   0 10px 30px rgba(255, 77, 77, 0.7),
+   0 15px 40px rgba(255, 77, 77, 0.4);
   animation: pulse-red 0.5s ease-in-out;
 }
 
@@ -264,24 +477,31 @@ const handleSignup = async () => {
   color: var(--text-color);
   outline: none;
   box-shadow:
-    inset 0 0 8px rgba(0, 240, 255, 0.3),
-    0 1px 0 rgba(0, 240, 255, 0.1),
-    0 -1px 0 rgba(0, 240, 255, 0.1);
+   inset 0 0 8px rgba(0, 240, 255, 0.3),
+   0 1px 0 rgba(0, 240, 255, 0.1),
+   0 -1px 0 rgba(0, 240, 255, 0.1);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .cyber-input:focus {
   border-color: var(--input-border-focus);
   box-shadow:
-    0 0 15px var(--input-border-focus),
-    inset 0 0 10px rgba(0, 240, 255, 0.6);
+   0 0 15px var(--input-border-focus),
+   inset 0 0 10px rgba(0, 240, 255, 0.6);
+}
+
+.cyber-input.error {
+  border-color: var(--error-color);
+  box-shadow:
+   0 0 10px var(--error-color),
+   inset 0 0 8px rgba(255, 77, 77, 0.6);
 }
 
 .signup-container.has-error .cyber-input {
   border-color: var(--error-color);
   box-shadow:
-    0 0 10px var(--error-color),
-    inset 0 0 8px rgba(255, 77, 77, 0.6);
+   0 0 10px var(--error-color),
+   inset 0 0 8px rgba(255, 77, 77, 0.6);
 }
 
 .seller-fields {
@@ -318,6 +538,15 @@ const handleSignup = async () => {
   text-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
 }
 
+.validation-error {
+  color: var(--error-color);
+  font-size: 0.8rem;
+  margin-top: 5px;
+  margin-bottom: 0;
+  text-shadow: 0 0 3px rgba(255, 77, 77, 0.5);
+  animation: fadeIn 0.3s ease-in;
+}
+
 .cyber-button {
   width: 100%;
   padding: 15px;
@@ -331,8 +560,8 @@ const handleSignup = async () => {
   text-transform: uppercase;
   letter-spacing: 1px;
   box-shadow:
-    0 5px 15px rgba(0, 255, 153, 0.7),
-    0 2px 5px rgba(0, 0, 0, 0.3);
+   0 5px 15px rgba(0, 255, 153, 0.7),
+   0 2px 5px rgba(0, 0, 0, 0.3);
   transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.1s ease, color 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -358,9 +587,9 @@ const handleSignup = async () => {
   background-color: var(--button-hover-bg);
   color: var(--button-text-color-hover);
   box-shadow:
-    0 0 20px rgba(0, 255, 153, 0.9),
-    0 0 30px rgba(0, 255, 153, 0.5),
-    0 8px 20px rgba(0, 0, 0, 0.7);
+   0 0 20px rgba(0, 255, 153, 0.9),
+   0 0 30px rgba(0, 255, 153, 0.5),
+   0 8px 20px rgba(0, 0, 0, 0.7);
   transform: translateY(-3px);
 }
 
@@ -368,8 +597,8 @@ const handleSignup = async () => {
   background-color: var(--button-active-bg);
   color: var(--button-text-color-hover);
   box-shadow:
-    0 2px 5px rgba(0, 255, 153, 0.5),
-    0 1px 2px rgba(0, 0, 0, 0.5);
+   0 2px 5px rgba(0, 255, 153, 0.5),
+   0 1px 2px rgba(0, 0, 0, 0.5);
   transform: translateY(2px);
 }
 
@@ -420,6 +649,11 @@ const handleSignup = async () => {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
   20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-shake {

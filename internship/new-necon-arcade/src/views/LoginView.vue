@@ -11,15 +11,70 @@ const password = ref('')
 const role = ref('gamer') // Default role
 const errorMessage = ref('')
 
+// Validation state
+const emailError = ref('')
+const passwordError = ref('')
+
 // FSM integration
 const { state, context, nextEvents, error: fsmError, sendTransition, fetchInitialState } = useFsm()
 const fsmKey = 'globalKey'
 const fsmTransition = ref('START')
 
+// Email validation function
+const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!email) {
+    return 'Email is required'
+  }
+  if (!emailRegex.test(email)) {
+    return 'Please enter a valid email address'
+  }
+  return ''
+}
+
+// Password validation function
+const validatePassword = (password) => {
+  if (!password) {
+    return 'Password is required'
+  }
+  if (password.length < 8) {
+    return 'Password must be at least 8 characters long'
+  }
+  if (!/(?=.*[a-z])/.test(password)) {
+    return 'Password must contain at least one lowercase letter'
+  }
+  if (!/(?=.*[A-Z])/.test(password)) {
+    return 'Password must contain at least one uppercase letter'
+  }
+  if (!/(?=.*\d)/.test(password)) {
+    return 'Password must contain at least one number'
+  }
+  if (!/(?=.*[@$!%*?&])/.test(password)) {
+    return 'Password must contain at least one special character (@$!%*?&)'
+  }
+  return ''
+}
+
+// Validate form
+const validateForm = () => {
+  emailError.value = validateEmail(email.value)
+  passwordError.value = validatePassword(password.value)
+  
+  return !emailError.value && !passwordError.value
+}
+
+// Real-time validation watchers
+watch(email, (newEmail) => {
+  emailError.value = validateEmail(newEmail)
+})
+
+watch(password, (newPassword) => {
+  passwordError.value = validatePassword(newPassword)
+})
+
 watch(() => state.value, (newState, oldState) => {
   console.log('FSM state changed from:', oldState, 'to:', newState)
   console.log('Current context:', context.value)
-
   if (newState === 'customerView') {
     console.log('Navigating to profile...')
     router.push('/profile')
@@ -33,9 +88,16 @@ watch(() => state.value, (newState, oldState) => {
 
 const handleLogin = async () => {
   errorMessage.value = ''
+  emailError.value = ''
+  passwordError.value = ''
+  
+  // Validate form before proceeding
+  if (!validateForm()) {
+    return
+  }
+  
   try {
     console.log('Starting login process...')
-
     // Ensure FSM state is initialized before sending transitions
     if (state.value === null) {
       await fetchInitialState('globalKey')
@@ -49,7 +111,6 @@ const handleLogin = async () => {
     })
 
     console.log('LOGIN response:', response)
-
     if (response.errorMessage) {
       errorMessage.value = response.errorMessage
       console.log('Login failed, sending FAILURE transition')
@@ -77,11 +138,9 @@ const handleLogin = async () => {
       email: email.value,
       role: role.value
     }
-
     console.log('Updating Vuex store with user data:', userData)
     // Dispatch login action to store
     store.dispatch('login', userData)
-
     console.log('Store state after update:', {
       isAuthenticated: store.getters.isAuthenticated,
       user: store.getters.user
@@ -89,7 +148,6 @@ const handleLogin = async () => {
 
     // Check if state changed after SUCCESS transition
     console.log('Current FSM state after SUCCESS:', state.value)
-
     // Navigate based on FSM state
     if (state.value === 'customerView') {
       console.log('Navigating to games page for gamer role')
@@ -98,7 +156,6 @@ const handleLogin = async () => {
       console.log('Navigating to seller dashboard for seller role')
       router.push('/seller/dashboard')
     }
-
   } catch (error) {
     console.error('Login error:', error)
     errorMessage.value = error.message || 'Login failed. Please check your credentials.'
@@ -119,16 +176,32 @@ const triggerFsmTransition = async () => {
 
 <template>
   <div class="login-view">
-    <div class="login-container cyber-card" :class="{ 'has-error': errorMessage }">
+    <div class="login-container cyber-card" :class="{ 'has-error': errorMessage || emailError || passwordError }">
       <h1 class="login-title neon-glow">Login</h1>
       <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
           <label for="email">Email:</label>
-          <input type="email" id="email" v-model="email" required class="cyber-input" />
+          <input 
+            type="email" 
+            id="email" 
+            v-model="email" 
+            required 
+            class="cyber-input"
+            :class="{ 'error': emailError }"
+          />
+          <p v-if="emailError" class="validation-error">{{ emailError }}</p>
         </div>
         <div class="form-group">
           <label for="password">Password:</label>
-          <input type="password" id="password" v-model="password" required class="cyber-input" />
+          <input 
+            type="password" 
+            id="password" 
+            v-model="password" 
+            required 
+            class="cyber-input"
+            :class="{ 'error': passwordError }"
+          />
+          <p v-if="passwordError" class="validation-error">{{ passwordError }}</p>
         </div>
         <div class="form-group">
           <label for="role">Login As:</label>
@@ -281,10 +354,17 @@ const triggerFsmTransition = async () => {
     inset 0 0 10px rgba(0, 240, 255, 0.6);
 }
 
+.cyber-input.error {
+  border-color: var(--error-color);
+  box-shadow: 
+    0 0 10px var(--error-color),
+    inset 0 0 8px rgba(255, 77, 77, 0.6);
+}
+
 .login-container.has-error .cyber-input {
   border-color: var(--error-color);
   box-shadow: 
-    0 0 10px var(--error-color), 
+    0 0 10px var(--error-color),
     inset 0 0 8px rgba(255, 77, 77, 0.6);
 }
 
@@ -295,6 +375,15 @@ const triggerFsmTransition = async () => {
   font-size: 0.9rem;
   font-weight: 500;
   text-shadow: 0 0 5px rgba(255, 77, 77, 0.5);
+}
+
+.validation-error {
+  color: var(--error-color);
+  font-size: 0.8rem;
+  margin-top: 5px;
+  margin-bottom: 0;
+  text-shadow: 0 0 3px rgba(255, 77, 77, 0.5);
+  animation: fadeIn 0.3s ease-in;
 }
 
 .cyber-button {
@@ -399,6 +488,11 @@ const triggerFsmTransition = async () => {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
   20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-shake {
