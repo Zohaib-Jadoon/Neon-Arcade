@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import { useFsm } from '../composables/useFsm'
-import logoSvg from '@/assets/logo.svg'
+import logopng from '@/assets/images/logo.png'
 
 const store = useStore()
 const router = useRouter()
@@ -90,7 +90,7 @@ const goProfile = () => handleNavigation('GO_PROFILE', '/profile')
   <nav class="navbar">
     <div class="navbar-left">
       <router-link to="/" class="logo-link" @click.prevent="goHome">
-        <img :src="logoSvg" alt="Neon Arcade Logo - Gaming Store Homepage" class="logo" />
+        <img :src="logopng" alt="Neon Arcade Logo - Gaming Store Homepage" class="logo" />
         <span class="site-title">Neon Arcade</span>
       </router-link>
     </div>

@@ -4,6 +4,11 @@ import { useStore } from 'vuex'
 import GameCard from '../components/GameCard.vue'
 import GameDetailModal from '../components/GameDetailModal.vue'
 import { useFsm } from '../composables/useFsm'
+import Cyberpunk2077 from "@/assets/images/Cyberpunk2077.jpeg"
+import GhostintheShell from "@/assets/images/GhostintheShell.jpeg"
+import NeonDrive from "@/assets/images/NeonDrive.jpeg"
+import NeuralNetwork from "@/assets/images/NeuralNetwork.jpeg"
+import DigitalWarfare from "@/assets/images/DigitalWarfare.jpeg"
 
 const store = useStore()
 const isLoading = ref(true)
@@ -14,7 +19,7 @@ const deals = ref([
     title: 'Cyberpunk 2077',
     price: 8399,
     originalPrice: 22399,
-    image: '/placeholder.png?height=300&width=400&query=cyberpunk city street',
+    image: Cyberpunk2077,
     rating: 4.2,
     genre: 'RPG',
     platform: ['PC', 'PS5', 'Xbox'],
@@ -28,7 +33,7 @@ const deals = ref([
     title: 'Ghost in the Shell',
     price: 9799,
     originalPrice: 19599,
-    image: '/placeholder.png?height=300&width=400&query=futuristic robot in city',
+    image: GhostintheShell,
     rating: 4.5,
     genre: 'Action',
     platform: ['PC', 'PS5'],
@@ -42,7 +47,7 @@ const deals = ref([
     title: 'Neon Drive',
     price: 5599,
     originalPrice: 11199,
-    image: '/placeholder.png?height=300&width=400&query=neon car driving in city',
+    image: NeonDrive,
     rating: 4.0,
     genre: 'Racing',
     platform: ['PC', 'Switch'],
@@ -56,7 +61,7 @@ const deals = ref([
     title: 'Digital Warfare',
     price: 11199,
     originalPrice: 16799,
-    image: '/placeholder.png?height=300&width=400&query=futuristic soldier with digital hud',
+    image: DigitalWarfare,
     rating: 4.1,
     genre: 'FPS',
     platform: ['PC', 'PS5', 'Xbox'],
@@ -70,7 +75,7 @@ const deals = ref([
     title: 'Neural Network',
     price: 6999,
     originalPrice: 12599,
-    image: '/placeholder.png?height=300&width=400&query=abstract neural network connections',
+    image: NeuralNetwork,
     rating: 4.3,
     genre: 'Puzzle',
     platform: ['PC'],

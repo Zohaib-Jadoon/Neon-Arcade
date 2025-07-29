@@ -35,7 +35,7 @@ const navigateWithTransition = async (path, transition) => {
   <nav class="navbar seller-navbar">
     <div class="navbar-left">
       <a @click.prevent="navigateWithTransition('/seller/dashboard', 'GO_HOME')" href="#" class="logo-link">
-        <img src="/src/assets/logo.svg" alt="Neon Arcade Logo" class="logo" />
+        <img src="/src/assets/images/logo.png" alt="Neon Arcade Logo" class="logo" />
         <span class="site-title">Seller Hub</span>
       </a>
     </div>

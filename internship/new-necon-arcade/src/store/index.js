@@ -1,5 +1,13 @@
 import { createStore } from "vuex"
 
+// Import images properly
+import Cyberpunk2077 from "@/assets/images/Cyberpunk2077.jpeg"
+import GhostintheShell from "@/assets/images/GhostintheShell.jpeg"
+import NeonDrive from "@/assets/images/NeonDrive.jpeg"
+import BladeRunner2049 from "@/assets/images/BladeRunner2049.jpeg"
+import NeuralNetwork from "@/assets/images/NeuralNetwork.jpeg"
+import DigitalWarfare from "@/assets/images/DigitalWarfare.jpeg"
+
 export default createStore({
   state: {
     user: null,
@@ -13,7 +21,7 @@ export default createStore({
         title: "Cyberpunk 2077",
         price: 16799,
         originalPrice: 22399,
-        image: "/placeholder.png",
+        image: Cyberpunk2077,
         rating: 4.2,
         genre: "RPG",
         platform: ["PC", "PS5", "Xbox"],
@@ -30,7 +38,7 @@ export default createStore({
         title: "Ghost in the Shell",
         price: 13999,
         originalPrice: 19599,
-        image: "/placeholder.png",
+        image: GhostintheShell,
         rating: 4.5,
         genre: "Action",
         platform: ["PC", "PS5"],
@@ -46,7 +54,7 @@ export default createStore({
         title: "Neon Drive",
         price: 8399,
         originalPrice: 11199,
-        image: "/placeholder.png",
+        image: NeonDrive,
         rating: 4.0,
         genre: "Racing",
         platform: ["PC", "Switch"],
@@ -62,7 +70,7 @@ export default createStore({
         title: "Blade Runner 2049",
         price: 11199,
         originalPrice: 16799,
-        image: "/placeholder.png",
+        image: BladeRunner2049,
         rating: 4.7,
         genre: "Adventure",
         platform: ["PC", "PS5", "Xbox"],
@@ -77,7 +85,7 @@ export default createStore({
         id: 5,
         title: "Neural Network",
         price: 12599,
-        image: "/placeholder.png",
+        image: NeuralNetwork,
         rating: 4.3,
         genre: "Puzzle",
         platform: ["PC"],
@@ -92,7 +100,7 @@ export default createStore({
         id: 6,
         title: "Digital Warfare",
         price: 15399,
-        image: "/placeholder.png",
+        image: DigitalWarfare,
         rating: 4.1,
         genre: "FPS",
         platform: ["PC", "PS5", "Xbox"],
@@ -158,12 +166,21 @@ export default createStore({
       } else {
         state.cart.push({ ...game, quantity: 1 })
       }
-      localStorage.setItem("cart", JSON.stringify(state.cart))
+      // Fixed: Added try-catch for localStorage
+      try {
+        localStorage.setItem("cart", JSON.stringify(state.cart))
+      } catch (error) {
+        console.warn("Could not save cart to localStorage:", error)
+      }
     },
 
     REMOVE_FROM_CART(state, gameId) {
       state.cart = state.cart.filter((item) => item.id !== gameId)
-      localStorage.setItem("cart", JSON.stringify(state.cart))
+      try {
+        localStorage.setItem("cart", JSON.stringify(state.cart))
+      } catch (error) {
+        console.warn("Could not save cart to localStorage:", error)
+      }
     },
 
     UPDATE_CART_QUANTITY(state, { gameId, quantity }) {
@@ -171,23 +188,31 @@ export default createStore({
       if (item) {
         item.quantity = quantity
       }
-      localStorage.setItem("cart", JSON.stringify(state.cart))
+      try {
+        localStorage.setItem("cart", JSON.stringify(state.cart))
+      } catch (error) {
+        console.warn("Could not save cart to localStorage:", error)
+      }
     },
 
     CLEAR_CART(state) {
       state.cart = []
-      localStorage.removeItem("cart")
+      try {
+        localStorage.removeItem("cart")
+      } catch (error) {
+        console.warn("Could not clear cart from localStorage:", error)
+      }
     },
 
     LOAD_CART(state) {
-      const savedCart = localStorage.getItem("cart")
-      if (savedCart) {
-          try {
+      try {
+        const savedCart = localStorage.getItem("cart")
+        if (savedCart) {
           state.cart = JSON.parse(savedCart)
-        } catch (_error) {
-          console.error("Error loading cart:", _error)
-          state.cart = []
         }
+      } catch (error) {
+        console.error("Error loading cart:", error)
+        state.cart = []
       }
     },
 
@@ -195,24 +220,32 @@ export default createStore({
       const exists = state.wishlist.find((item) => item.id === game.id)
       if (!exists) {
         state.wishlist.push(game)
-        localStorage.setItem("wishlist", JSON.stringify(state.wishlist))
+        try {
+          localStorage.setItem("wishlist", JSON.stringify(state.wishlist))
+        } catch (error) {
+          console.warn("Could not save wishlist to localStorage:", error)
+        }
       }
     },
 
     REMOVE_FROM_WISHLIST(state, gameId) {
       state.wishlist = state.wishlist.filter((item) => item.id !== gameId)
-      localStorage.setItem("wishlist", JSON.stringify(state.wishlist))
+      try {
+        localStorage.setItem("wishlist", JSON.stringify(state.wishlist))
+      } catch (error) {
+        console.warn("Could not save wishlist to localStorage:", error)
+      }
     },
 
     LOAD_WISHLIST(state) {
-      const savedWishlist = localStorage.getItem("wishlist")
-      if (savedWishlist) {
-          try {
+      try {
+        const savedWishlist = localStorage.getItem("wishlist")
+        if (savedWishlist) {
           state.wishlist = JSON.parse(savedWishlist)
-        } catch (_error) {
-          console.error("Error loading wishlist:", _error)
-          state.wishlist = []
         }
+      } catch (error) {
+        console.error("Error loading wishlist:", error)
+        state.wishlist = []
       }
     },
 
@@ -222,25 +255,41 @@ export default createStore({
 
     ADD_GAME(state, game) {
       state.allGames.push(game)
-      localStorage.setItem("allGames", JSON.stringify(state.allGames))
+      try {
+        localStorage.setItem("allGames", JSON.stringify(state.allGames))
+      } catch (error) {
+        console.warn("Could not save games to localStorage:", error)
+      }
     },
 
     UPDATE_GAME(state, updatedGame) {
       const index = state.allGames.findIndex((game) => game.id === updatedGame.id)
       if (index !== -1) {
         state.allGames.splice(index, 1, updatedGame)
-        localStorage.setItem("allGames", JSON.stringify(state.allGames))
+        try {
+          localStorage.setItem("allGames", JSON.stringify(state.allGames))
+        } catch (error) {
+          console.warn("Could not save games to localStorage:", error)
+        }
       }
     },
 
     DELETE_GAME(state, gameId) {
       state.allGames = state.allGames.filter((game) => game.id !== gameId)
-      localStorage.setItem("allGames", JSON.stringify(state.allGames))
+      try {
+        localStorage.setItem("allGames", JSON.stringify(state.allGames))
+      } catch (error) {
+        console.warn("Could not save games to localStorage:", error)
+      }
     },
 
     ADD_ORDER(state, order) {
       state.orders.push(order)
-      localStorage.setItem("orders", JSON.stringify(state.orders))
+      try {
+        localStorage.setItem("orders", JSON.stringify(state.orders))
+      } catch (error) {
+        console.warn("Could not save orders to localStorage:", error)
+      }
     },
 
     SET_CURRENT_ORDER(state, order) {
@@ -248,38 +297,46 @@ export default createStore({
     },
 
     LOAD_ORDERS(state) {
-      const savedOrders = localStorage.getItem("orders")
-      if (savedOrders) {
-        try {
+      try {
+        const savedOrders = localStorage.getItem("orders")
+        if (savedOrders) {
           state.orders = JSON.parse(savedOrders)
-        } catch (error) {
-          console.error("Error loading orders:", error)
-          state.orders = []
         }
+      } catch (error) {
+        console.error("Error loading orders:", error)
+        state.orders = []
       }
     },
 
     ADD_SALE_RECORD(state, sale) {
       state.sellerSales.push(sale)
-      localStorage.setItem("sellerSales", JSON.stringify(state.sellerSales))
+      try {
+        localStorage.setItem("sellerSales", JSON.stringify(state.sellerSales))
+      } catch (error) {
+        console.warn("Could not save seller sales to localStorage:", error)
+      }
     },
 
     LOAD_SELLER_SALES(state) {
-      const savedSales = localStorage.getItem("sellerSales")
-      if (savedSales) {
-        try {
+      try {
+        const savedSales = localStorage.getItem("sellerSales")
+        if (savedSales) {
           state.sellerSales = JSON.parse(savedSales)
-        } catch (error) {
-          console.error("Error loading seller sales:", error)
-          state.sellerSales = []
         }
+      } catch (error) {
+        console.error("Error loading seller sales:", error)
+        state.sellerSales = []
       }
     },
 
     UPDATE_USER_PROFILE(state, updatedProfile) {
       if (state.user) {
         state.user = { ...state.user, ...updatedProfile }
-        localStorage.setItem("user", JSON.stringify(state.user))
+        try {
+          localStorage.setItem("user", JSON.stringify(state.user))
+        } catch (error) {
+          console.warn("Could not save user to localStorage:", error)
+        }
       }
     },
   },
@@ -298,21 +355,30 @@ export default createStore({
         }
       }
       commit("SET_USER", userDataWithRole)
-      localStorage.setItem("user", JSON.stringify(userDataWithRole))
+      try {
+        localStorage.setItem("user", JSON.stringify(userDataWithRole))
+      } catch (error) {
+        console.warn("Could not save user to localStorage:", error)
+      }
     },
 
     logout({ commit }) {
       commit("CLEAR_USER")
       commit("CLEAR_CART")
-      commit("LOAD_WISHLIST") // Clear wishlist on logout
-      localStorage.removeItem("user")
-      localStorage.removeItem("userRole")
+      // Fixed: Remove wishlist from localStorage properly
+      try {
+        localStorage.removeItem("user")
+        localStorage.removeItem("userRole")
+        localStorage.removeItem("wishlist")
+      } catch (error) {
+        console.warn("Could not clear localStorage:", error)
+      }
     },
 
-    initializeAuth({ commit }) {
-      const storedUser = localStorage.getItem("user")
-      if (storedUser) {
-        try {
+    initializeAuth({ commit, state }) { // Fixed: Added state parameter
+      try {
+        const storedUser = localStorage.getItem("user")
+        if (storedUser) {
           const user = JSON.parse(storedUser)
           // Ensure sellerProfile is initialized if user is a seller
           if (user.role === "seller" && !user.sellerProfile) {
@@ -325,21 +391,28 @@ export default createStore({
             }
           }
           commit("SET_USER", { ...user, role: user.role || "gamer" })
-        } catch (error) {
+        }
+      } catch (error) {
+        console.error("Error loading user:", error)
+        try {
           localStorage.removeItem("user")
           localStorage.removeItem("userRole")
+        } catch (e) {
+          console.warn("Could not clear invalid user data:", e)
         }
       }
+
       commit("LOAD_CART")
       commit("LOAD_ORDERS")
       commit("LOAD_SELLER_SALES")
-      commit("LOAD_WISHLIST") // Load wishlist on auth initialization
+      commit("LOAD_WISHLIST")
 
-      const savedGames = localStorage.getItem("allGames")
-      if (savedGames) {
-          try {
+      // Fixed: Proper reference to state
+      try {
+        const savedGames = localStorage.getItem("allGames")
+        if (savedGames) {
           const loadedGames = JSON.parse(savedGames)
-          const initialGames = this.state.allGames.filter((game) => game.sellerId === "system")
+          const initialGames = state.allGames.filter((game) => game.sellerId === "system")
           const mergedGames = [...initialGames]
 
           loadedGames.forEach((loadedGame) => {
@@ -348,9 +421,13 @@ export default createStore({
             }
           })
           commit("SET_ALL_GAMES", mergedGames)
-        } catch (_error) {
-          console.error("Error loading all games:", _error)
+        }
+      } catch (error) {
+        console.error("Error loading all games:", error)
+        try {
           localStorage.removeItem("allGames")
+        } catch (e) {
+          console.warn("Could not clear invalid games data:", e)
         }
       }
     },
@@ -411,7 +488,11 @@ export default createStore({
         order.status = status
         order.paymentDetails = paymentDetails
         order.updatedAt = new Date().toISOString()
-        localStorage.setItem("orders", JSON.stringify(state.orders))
+        try {
+          localStorage.setItem("orders", JSON.stringify(state.orders))
+        } catch (error) {
+          console.warn("Could not save orders to localStorage:", error)
+        }
         commit("SET_CURRENT_ORDER", order)
       }
     },
@@ -423,7 +504,7 @@ export default createStore({
         rating: 0,
         featured: false,
         releaseDate: new Date().toISOString().split("T")[0],
-        sellerId: state.user.id,
+        sellerId: state.user?.id || "unknown", // Fixed: Added null check
       }
       commit("ADD_GAME", newGame)
       if (state.user && state.user.sellerProfile) {
